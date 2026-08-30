@@ -18,6 +18,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning={true}
       className={`${inter.variable} h-full bg-white text-black`}
     >
       <body className="min-h-full flex flex-col font-sans">

@@ -10,6 +10,8 @@ import { GoLaw } from "react-icons/go";
 export default function Home() {
   const { user } = useAuth();
 
+  console.log(user);
+
   const [loading, setLoading] = useState(true);
   const [isSignUp, setIsSignUp] = useState(true);
 

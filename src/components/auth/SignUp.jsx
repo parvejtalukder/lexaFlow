@@ -14,7 +14,7 @@ export default function SignUp({ onSwitchToSignIn }) {
   const searchParams = useSearchParams();
   const from = searchParams.get('from') || '/';
 
-  const { registerUser, updateUser, googleSignIn } = useAuth();
+  const { registerUser, updateUser, goWithGoogle } = useAuth();
   const axiosSecure = useAxiosSecure();
 
   const [authError, setAuthError] = useState('');
@@ -40,6 +40,7 @@ export default function SignUp({ onSwitchToSignIn }) {
     const toastId = toast.loading('Creating account...');
 
     try {
+      // 1. Register with Firebase Authentication
       const registerRes = await registerUser(data.email, data.password);
       const firebaseUser = registerRes.user;
 
@@ -47,6 +48,7 @@ export default function SignUp({ onSwitchToSignIn }) {
         await updateUser({ displayName: data.fullName });
       }
 
+      // 2. Prepare database record payload
       const userPayload = {
         uid: firebaseUser.uid,
         fullName: data.fullName,
@@ -54,17 +56,26 @@ export default function SignUp({ onSwitchToSignIn }) {
         photoURL: firebaseUser.photoURL || null,
       };
 
+      // 3. Post to MongoDB signup route
       const res = await axiosSecure.post('/api/users/signup', userPayload);
 
-      if (res.data?.success) {
-        toast.success(res.data.message || 'Application submitted! Pending Admin review.', { id: toastId });
-        router.push(from);
+      // Check for success status or insertedId from MongoDB
+      if (res.status === 201 || res.status === 200 || res.data?.success || res.data?.insertedId) {
+        toast.success(res.data?.message || 'Application submitted! Pending Admin review.', { id: toastId });
+        
+        // Switch view or redirect to target route
+        if (onSwitchToSignIn) {
+          onSwitchToSignIn();
+        } else {
+          router.push(from);
+        }
       } else {
-        throw new Error(res.data?.message || 'Failed to create user record.');
+        throw new Error(res.data?.error || 'Failed to register application record.');
       }
     } catch (err) {
+      console.error('Sign-Up Error:', err);
       const errorMessage =
-        err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Registration failed.';
+        err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Registration failed. Please try again.';
       setAuthError(errorMessage);
       toast.error(errorMessage, { id: toastId });
     } finally {
@@ -77,7 +88,7 @@ export default function SignUp({ onSwitchToSignIn }) {
     const toastId = toast.loading('Signing up with Google...');
 
     try {
-      const result = await googleSignIn();
+      const result = await goWithGoogle();
       const gUser = result.user;
 
       const googleUserPayload = {
@@ -89,9 +100,19 @@ export default function SignUp({ onSwitchToSignIn }) {
 
       const res = await axiosSecure.post('/api/users/signup', googleUserPayload);
 
-      toast.success(res.data?.message || 'Google sign-up successful! Pending Admin review.', { id: toastId });
-      router.push(from);
+      if (res.status === 201 || res.status === 200 || res.data?.success || res.data?.insertedId) {
+        toast.success(res.data?.message || 'Google sign-up successful! Pending Admin review.', { id: toastId });
+        
+        if (onSwitchToSignIn) {
+          onSwitchToSignIn();
+        } else {
+          router.push(from);
+        }
+      } else {
+        throw new Error(res.data?.error || 'Failed to process Google sign-up.');
+      }
     } catch (err) {
+      console.error('Google Sign-Up Error:', err);
       const errorMsg = err?.response?.data?.error || err?.message || 'Google sign-up failed.';
       setAuthError(errorMsg);
       toast.error(errorMsg, { id: toastId });
@@ -115,6 +136,7 @@ export default function SignUp({ onSwitchToSignIn }) {
         </div>
       )}
 
+      {/* Google Sign-In Button */}
       <button
         type="button"
         onClick={handleGoogleSignUp}
@@ -131,10 +153,11 @@ export default function SignUp({ onSwitchToSignIn }) {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" className="space-y-4">
-
+        {/* Anti-Autofill Dummy Inputs */}
         <input type="text" name="fake-username" style={{ display: 'none' }} tabIndex={-1} />
         <input type="password" name="fake-password" style={{ display: 'none' }} tabIndex={-1} />
 
+        {/* Full Name Input */}
         <div className="bg-slate-800/40 rounded-lg p-3">
           <label className="block text-xs font-medium text-[#080B1A] uppercase tracking-wider mb-1">
             Full Name
@@ -150,6 +173,7 @@ export default function SignUp({ onSwitchToSignIn }) {
           )}
         </div>
 
+        {/* Email & Password Grid */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-slate-800/40 rounded-lg p-3">
             <label className="block text-xs font-medium text-[#080B1A] uppercase tracking-wider mb-1">
@@ -222,6 +246,7 @@ export default function SignUp({ onSwitchToSignIn }) {
         </button>
       </form>
 
+      {/* Switcher */}
       <div className="mt-8 text-center text-xs text-slate-400">
         Already have an account?{' '}
         <button

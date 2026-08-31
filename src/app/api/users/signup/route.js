@@ -13,14 +13,18 @@ export async function POST(request) {
       );
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
     const usersCollection = await getCollection(COLLECTIONS.USERS);
 
-    const existingUser = await usersCollection.findOne({ uid });
+    const existingUser = await usersCollection.findOne({
+      $or: [{ uid }, { email: normalizedEmail }]
+    });
+
     if (existingUser) {
       return NextResponse.json(
         {
           success: true,
-          message: 'User profile already exists in MongoDB.',
+          message: 'User profile with this UID or Email already exists.',
           insertedId: existingUser._id,
         },
         { status: 200 }
@@ -31,7 +35,7 @@ export async function POST(request) {
       uid,
       fullName,
       photoURL: photoURL || null,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       address: '',
       phone: '',
       jobTitle: '',
@@ -40,6 +44,8 @@ export async function POST(request) {
       role: 'caseworker', 
       accountStatus: 'PENDING', 
       joiningDate: null,
+      hqParcentage: null,
+      elParcentage: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

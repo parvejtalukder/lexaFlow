@@ -12,7 +12,7 @@ const PrivateRoute = ({ children }) => {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace(`/login?from=${encodeURIComponent(pathname)}`);
+      router.replace(`/?from=${encodeURIComponent(pathname)}`);
     }
   }, [user, loading, router, pathname]);
 

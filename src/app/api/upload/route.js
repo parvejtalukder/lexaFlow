@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB limit
+const MAX_FILE_SIZE = 1 * 1024 * 1024; 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export async function POST(request) {
@@ -12,7 +12,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
     }
 
-    // 1. Validate size locally before sending across network
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: 'File size exceeds 1 MB limit.' },
@@ -20,7 +19,6 @@ export async function POST(request) {
       );
     }
 
-    // 2. Validate MIME type locally
     if (!ALLOWED_TYPES.has(file.type)) {
       return NextResponse.json(
         { error: 'Invalid file type. Only JPG, PNG, and WebP are allowed.' },
@@ -28,7 +26,6 @@ export async function POST(request) {
       );
     }
 
-    // 3. Forward request to VPS PHP receiver endpoint
     const vpsResponse = await fetch('http://72.61.17.107/uploads/upload.php', {
       method: 'POST',
       body: formData,
@@ -43,7 +40,6 @@ export async function POST(request) {
       );
     }
 
-    // 4. Return success with public VPS image URL
     return NextResponse.json({
       success: true,
       imageUrl: data.imageUrl,

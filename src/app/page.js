@@ -4,24 +4,21 @@ import SignUp from "@/components/auth/SignUp";
 import LawBackground from "@/components/LawBg";
 import useAuth from "@/hooks/useAuth";
 import Loader from "@/templates/loader/Loader";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GoLaw } from "react-icons/go";
 
 export default function Home() {
-  const { user } = useAuth();
 
-  console.log(user);
-
-  const [loading, setLoading] = useState(true);
-  const [isSignUp, setIsSignUp] = useState(true);
+  const { user, loading} = useAuth();
+  const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, []);
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   if (loading) {
     return <Loader></Loader>;

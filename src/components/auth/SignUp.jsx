@@ -12,7 +12,7 @@ import { FiEye, FiEyeOff } from 'react-icons/fi';
 export default function SignUp({ onSwitchToSignIn }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get('from') || '/';
+  const from = searchParams.get('from') || '/dashboard';
 
   const { registerUser, updateUser, goWithGoogle } = useAuth();
   const axiosSecure = useAxiosSecure();
@@ -40,7 +40,7 @@ export default function SignUp({ onSwitchToSignIn }) {
     const toastId = toast.loading('Creating account...');
 
     try {
-      // 1. Register with Firebase Authentication
+      
       const registerRes = await registerUser(data.email, data.password);
       const firebaseUser = registerRes.user;
 
@@ -48,7 +48,6 @@ export default function SignUp({ onSwitchToSignIn }) {
         await updateUser({ displayName: data.fullName });
       }
 
-      // 2. Prepare database record payload
       const userPayload = {
         uid: firebaseUser.uid,
         fullName: data.fullName,
@@ -56,14 +55,11 @@ export default function SignUp({ onSwitchToSignIn }) {
         photoURL: firebaseUser.photoURL || null,
       };
 
-      // 3. Post to MongoDB signup route
       const res = await axiosSecure.post('/api/users/signup', userPayload);
 
-      // Check for success status or insertedId from MongoDB
       if (res.status === 201 || res.status === 200 || res.data?.success || res.data?.insertedId) {
         toast.success(res.data?.message || 'Application submitted! Pending Admin review.', { id: toastId });
         
-        // Switch view or redirect to target route
         if (onSwitchToSignIn) {
           onSwitchToSignIn();
         } else {
@@ -129,12 +125,6 @@ export default function SignUp({ onSwitchToSignIn }) {
           Create an account to manage legal cases and operations.
         </p>
       </div>
-
-      {authError && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-400">
-          {authError}
-        </div>
-      )}
 
       {/* Google Sign-In Button */}
       <button
